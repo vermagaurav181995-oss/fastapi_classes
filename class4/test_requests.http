@@ -1,0 +1,377 @@
+@base = http://127.0.0.1:8000
+
+###
+GET {{base}}/search?q=lap
+
+###
+GET {{base}}/search?limit=2
+
+###
+GET {{base}}/greet?name=Ada
+
+###
+GET {{base}}/filter?tag=music&tag=school
+
+###
+GET {{base}}/search?q=a
+
+###
+GET {{base}}/search?limit=100
+
+###
+GET {{base}}/greet
+
+###
+GET {{base}}/items/1
+
+###
+GET {{base}}/users/ada_99
+
+###
+GET {{base}}/items/0
+
+###
+GET {{base}}/items/5000
+
+###
+GET {{base}}/items/abc
+
+###
+GET {{base}}/items/42
+
+###
+GET {{base}}/users/Ab
+
+###
+GET {{base}}/headers
+User-Agent: rest-client-demo
+X-Token: hello
+
+###
+GET {{base}}/secure
+X-Token: secret-token
+
+###
+GET {{base}}/set-cookie
+
+###
+GET {{base}}/read-cookie
+
+###
+GET {{base}}/read-cookie
+Cookie: session_id=typed-by-hand
+
+###
+GET {{base}}/secure
+
+###
+GET {{base}}/secure
+X-Token: wrong
+
+###
+GET {{base}}/clear-cookie
+
+###
+GET {{base}}/read-cookie
+
+###
+POST {{base}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice&password=wonderland
+
+###
+POST {{base}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice&password=nope
+
+###
+POST {{base}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice&password=abc
+
+###
+POST {{base}}/login
+Content-Type: application/json
+
+{"username": "alice", "password": "wonderland"}
+
+###
+POST {{base}}/upload
+Content-Type: multipart/form-data; boundary=----Class4Boundary
+
+------Class4Boundary
+Content-Disposition: form-data; name="file"; filename="cat.png"
+Content-Type: image/png
+
+< ./sample_files/cat.png
+------Class4Boundary--
+
+###
+POST {{base}}/upload-many
+Content-Type: multipart/form-data; boundary=----Class4Boundary
+
+------Class4Boundary
+Content-Disposition: form-data; name="files"; filename="cat.png"
+Content-Type: image/png
+
+< ./sample_files/cat.png
+------Class4Boundary
+Content-Disposition: form-data; name="files"; filename="dog.jpg"
+Content-Type: image/jpeg
+
+< ./sample_files/dog.jpg
+------Class4Boundary--
+
+###
+POST {{base}}/upload
+Content-Type: multipart/form-data; boundary=----Class4Boundary
+
+------Class4Boundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+< ./sample_files/notes.txt
+------Class4Boundary--
+
+###
+GET {{base}}/items/1
+
+###
+PATCH {{base}}/items/1
+Content-Type: application/json
+
+{"price": 2.0}
+
+###
+PUT {{base}}/items/1
+Content-Type: application/json
+
+{"name": "Gel Pen", "price": 3.0}
+
+###
+PATCH {{base}}/items/1/broken
+Content-Type: application/json
+
+{"price": 9.9}
+
+###
+PUT {{base}}/items/1
+Content-Type: application/json
+
+{"price": 3.0}
+
+###
+PATCH {{base}}/items/99
+Content-Type: application/json
+
+{"price": 1.0}
+
+###
+PATCH {{base}}/items/1
+Content-Type: application/json
+
+{"price": "cheap"}
+
+###
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret", "confirm_password": "supersecret"}
+
+###
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "not-an-email", "password": "supersecret", "confirm_password": "supersecret"}
+
+###
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "bob@example.com", "password": "short", "confirm_password": "short"}
+
+###
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "bob@example.com", "password": "supersecret", "confirm_password": "different1"}
+
+###
+GET {{base}}/users
+
+###
+POST {{base}}/users
+Content-Type: application/json
+
+{"username": "cara", "email": "cara@example.com", "password": "pw"}
+
+###
+DELETE {{base}}/users/2
+
+###
+GET {{base}}/users/99
+
+###
+POST {{base}}/users
+Content-Type: application/json
+
+{"username": "dan"}
+
+###
+GET {{base}}/books/1
+
+###
+POST {{base}}/books/1/buy
+
+###
+GET {{base}}/books/99
+
+###
+POST {{base}}/books/2/buy
+
+###
+GET {{base}}/books
+
+###
+GET {{base}}/books?skip=10&limit=3
+
+###
+GET {{base}}/authors?skip=10
+
+###
+GET {{base}}/books?limit=50
+
+###
+GET {{base}}/authors?skip=-1
+
+###
+GET {{base}}/products?skip=2&limit=2
+
+###
+GET {{base}}/me
+X-Token: alice-token
+
+###
+GET {{base}}/my-products?limit=1
+X-Token: bob-token
+
+###
+GET {{base}}/me
+
+###
+GET {{base}}/me
+X-Token: hacker
+
+###
+GET {{base}}/products?limit=0
+
+###
+GET {{base}}/books
+
+###
+GET {{base}}/books/99
+
+###
+GET {{base}}/books/abc
+
+###
+GET {{base}}/public/hello
+
+###
+GET {{base}}/admin/stats
+X-API-Key: super-secret-key
+
+###
+POST {{base}}/admin/reset
+X-API-Key: super-secret-key
+
+###
+GET {{base}}/admin/stats
+
+###
+GET {{base}}/admin/stats
+X-API-Key: wrong
+
+###
+GET {{base}}/books?limit=2
+
+###
+GET {{base}}/books?author_id=2
+
+###
+POST {{base}}/books
+Content-Type: application/json
+
+{"title": "Brave New World", "author_id": 2, "price": 9, "cost_price": 4}
+
+###
+PATCH {{base}}/books/1
+Content-Type: application/json
+
+{"price": 12.5}
+
+###
+POST {{base}}/books/1/cover
+Content-Type: multipart/form-data; boundary=----Class4Boundary
+
+------Class4Boundary
+Content-Disposition: form-data; name="file"; filename="cat.png"
+Content-Type: image/png
+
+< ./sample_files/cat.png
+------Class4Boundary--
+
+###
+GET {{base}}/authors
+
+###
+POST {{base}}/authors
+Content-Type: application/json
+
+{"name": "Ursula K. Le Guin"}
+
+###
+GET {{base}}/authors/2/books
+
+###
+GET {{base}}/admin/stats
+X-API-Key: bookstore-admin-key
+
+###
+DELETE {{base}}/admin/books/4
+X-API-Key: bookstore-admin-key
+
+###
+GET {{base}}/books/99
+
+###
+GET {{base}}/books/0
+
+###
+POST {{base}}/books
+Content-Type: application/json
+
+{"title": "Ghost", "author_id": 99, "price": 5, "cost_price": 1}
+
+###
+PATCH {{base}}/books/1
+Content-Type: application/json
+
+{"price": -1}
+
+###
+POST {{base}}/books/1/cover
+Content-Type: multipart/form-data; boundary=----Class4Boundary
+
+------Class4Boundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+< ./sample_files/notes.txt
+------Class4Boundary--
+
+###
+GET {{base}}/admin/stats
