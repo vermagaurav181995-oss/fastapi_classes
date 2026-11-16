@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  Tiny frontend for example 11.
+  Serve it from THIS folder:   python -m http.server 5173
+  Then open:                   http://localhost:5173   (localhost, not 127.0.0.1!)
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CORS demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    input, button { font: inherit; padding: .4rem; margin: .2rem 0; width: 100%; box-sizing: border-box; }
+    pre { background: #f3f3f3; padding: 1rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>CORS demo</h1>
+  <p>This page runs on <code>http://localhost:5173</code> and calls the API on <code>http://127.0.0.1:8000</code>.</p>
+  <input id="email" value="student@example.com">
+  <input id="password" type="password" value="password123">
+  <button id="go">Log in &amp; call /auth/me</button>
+  <pre id="out">Click the button. Open DevTools (F12) → Console to see CORS errors.</pre>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    const out = document.getElementById("out");
+
+    document.getElementById("go").addEventListener("click", async () => {
+      try {
+        // 1. Log in: OAuth2 expects a FORM body with "username" and "password"
+        const loginRes = await fetch(`${API}/auth/login`, {
+          method: "POST",
+          body: new URLSearchParams({
+            username: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+          }),
+        });
+        const login = await loginRes.json();
+        if (!loginRes.ok) { out.textContent = "Login failed: " + JSON.stringify(login); return; }
+
+        // 2. Call a protected route with the token
+        const meRes = await fetch(`${API}/auth/me`, {
+          headers: { Authorization: `Bearer ${login.access_token}` },
+        });
+        out.textContent = JSON.stringify(await meRes.json(), null, 2);
+      } catch (err) {
+        // A CORS block shows up here as "TypeError: Failed to fetch"
+        out.textContent = "Request blocked: " + err + "\nCheck the browser console for the CORS message.";
+      }
+    });
+  </script>
+</body>
+</html>

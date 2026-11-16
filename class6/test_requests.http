@@ -1,0 +1,670 @@
+# Class 6: requests for the VS Code "REST Client" extension (humao.rest-client).
+# 1. Start ONE example (they all use port 8000). Delete its .db file for a clean start.
+# 2. Click "Send Request" above a request. Go top to bottom inside a section:
+#    the "login" requests are NAMED (# @name ...), and variables such as
+#    @token06 copy the access_token from their response, so you log in ONCE.
+# Requests marked FAIL are supposed to return an error.
+
+@base = http://127.0.0.1:8000
+
+###
+# ==========================================================================
+# 01 Password hashing
+# Start it:  cd 01_password_hashing && fastapi dev main.py
+# No .env needed.
+# ==========================================================================
+
+### Hash the same password twice -> 200 (hashes differ)
+GET {{base}}/demo/hash?password=secret123
+
+### Verify the right password -> 200 is_valid true
+GET {{base}}/demo/verify?password=secret123&attempt=secret123
+
+### Verify a wrong password -> 200 is_valid false
+GET {{base}}/demo/verify?password=secret123&attempt=wrong
+
+### FAIL empty password -> 422
+GET {{base}}/demo/hash?password=
+
+###
+# ==========================================================================
+# 02 Settings & SECRET_KEY
+# Start it:  cd 02_settings_secret_key && fastapi dev main.py
+# Then remove SECRET_KEY from .env: the server refuses to start.
+# ==========================================================================
+
+### Show public settings -> 200
+GET {{base}}/settings
+
+### One setting -> 200
+GET {{base}}/settings/algorithm
+
+### FAIL the secret is never exposed -> 404
+GET {{base}}/settings/secret_key
+
+###
+# ==========================================================================
+# 03 User model + register
+# Start it:  cd 03_user_model_register && fastapi dev main.py
+# ==========================================================================
+
+### Register -> 201 (no password in the response)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### List users -> 200
+GET {{base}}/users
+
+### FAIL same email again -> 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### FAIL short password -> 422
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada2@example.com", "password": "short"}
+
+### FAIL bad email -> 422
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "not-an-email", "password": "supersecret"}
+
+###
+# ==========================================================================
+# 04 JWT create & decode
+# Start it:  cd 04_jwt_create_decode && fastapi dev main.py
+# ==========================================================================
+@jwt04 = {{token04.response.body.$.access_token}}
+
+### Create a token -> 200
+# @name token04
+GET {{base}}/demo/token?user_id=7
+
+### Decode it (uses @jwt04) -> 200
+GET {{base}}/demo/decode?token={{jwt04}}
+
+### FAIL tampered token -> 401
+GET {{base}}/demo/tampered
+
+### FAIL expired token -> 401
+GET {{base}}/demo/expired
+
+### FAIL garbage token -> 401
+GET {{base}}/demo/decode?token=abc
+
+### FAIL user_id 0 -> 422
+GET {{base}}/demo/token?user_id=0
+
+###
+# ==========================================================================
+# 05 Login
+# Start it:  cd 05_login && fastapi dev main.py
+# ==========================================================================
+
+### Register -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Login (FORM body, email in username) -> 200
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### FAIL wrong password -> 401
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=wrongpass
+
+### FAIL unknown email (same message) -> 401
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=nobody@example.com&password=supersecret
+
+### FAIL JSON instead of a form -> 422
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"username": "ada@example.com", "password": "supersecret"}
+
+###
+# ==========================================================================
+# 06 get_current_user & /auth/me
+# Start it:  cd 06_get_current_user_me && fastapi dev main.py
+# Expired token: set ACCESS_TOKEN_EXPIRE_MINUTES=1 in .env, log in, wait 1 min, call /auth/me -> 401
+# ==========================================================================
+@token06 = {{login06.response.body.$.access_token}}
+
+### Register -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Login -> 200 (saved as @token06)
+# @name login06
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### Me with the token -> 200
+GET {{base}}/auth/me
+Authorization: Bearer {{token06}}
+
+### FAIL no token -> 401
+GET {{base}}/auth/me
+
+### FAIL fake token -> 401
+GET {{base}}/auth/me
+Authorization: Bearer fake.token.value
+
+###
+# ==========================================================================
+# 07 Protect a whole router
+# Start it:  cd 07_protect_router && fastapi dev main.py
+# ==========================================================================
+@token07 = {{login07.response.body.$.access_token}}
+
+### Public route -> 200
+GET {{base}}/public/info
+
+### FAIL books without a token -> 401
+GET {{base}}/books
+
+### Register -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Login -> 200 (saved as @token07)
+# @name login07
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### Books with the token -> 200
+GET {{base}}/books
+Authorization: Bearer {{token07}}
+
+### Add a book (uses CurrentUser) -> 201
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{token07}}
+
+{"title": "Neuromancer"}
+
+### FAIL bad token -> 401
+GET {{base}}/books/1
+Authorization: Bearer bad
+
+### FAIL missing book -> 404
+GET {{base}}/books/99
+Authorization: Bearer {{token07}}
+
+###
+# ==========================================================================
+# 08 Roles: require_role
+# Start it:  cd 08_roles_require_role && fastapi dev main.py
+# Seeded users: user@example.com / user12345, admin@example.com / admin12345
+# ==========================================================================
+@user08 = {{loginUser08.response.body.$.access_token}}
+@admin08 = {{loginAdmin08.response.body.$.access_token}}
+
+### Public list -> 200
+GET {{base}}/books
+
+### Login as USER -> 200 (@user08)
+# @name loginUser08
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=user@example.com&password=user12345
+
+### Login as ADMIN -> 200 (@admin08)
+# @name loginAdmin08
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### User creates a book -> 201
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{user08}}
+
+{"title": "Emma"}
+
+### FAIL user deletes -> 403
+DELETE {{base}}/books/2
+Authorization: Bearer {{user08}}
+
+### FAIL no token -> 401
+DELETE {{base}}/books/2
+
+### Admin deletes -> 204
+DELETE {{base}}/books/1
+Authorization: Bearer {{admin08}}
+
+### FAIL admin deletes a missing book -> 404
+DELETE {{base}}/books/999
+Authorization: Bearer {{admin08}}
+
+### FAIL empty title -> 422
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{user08}}
+
+{"title": ""}
+
+###
+# ==========================================================================
+# 09 Ownership
+# Start it:  cd 09_ownership_check && fastapi dev main.py
+# Seeded: alice@example.com / alice12345 (owns review 1), bob (owns review 2), admin@example.com / admin12345
+# ==========================================================================
+@alice09 = {{loginAlice09.response.body.$.access_token}}
+@admin09 = {{loginAdmin09.response.body.$.access_token}}
+
+### Public list -> 200
+GET {{base}}/reviews
+
+### Login as ALICE -> 200 (@alice09)
+# @name loginAlice09
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice@example.com&password=alice12345
+
+### Login as ADMIN -> 200 (@admin09)
+# @name loginAdmin09
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Alice edits HER review -> 200
+PATCH {{base}}/reviews/1
+Content-Type: application/json
+Authorization: Bearer {{alice09}}
+
+{"rating": 3}
+
+### FAIL alice edits BOB's review -> 403
+PATCH {{base}}/reviews/2
+Content-Type: application/json
+Authorization: Bearer {{alice09}}
+
+{"rating": 1}
+
+### FAIL alice deletes BOB's review -> 403
+DELETE {{base}}/reviews/2
+Authorization: Bearer {{alice09}}
+
+### Admin edits bob's review -> 200
+PATCH {{base}}/reviews/2
+Content-Type: application/json
+Authorization: Bearer {{admin09}}
+
+{"text": "Edited by admin"}
+
+### Alice writes a review -> 201
+POST {{base}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{alice09}}
+
+{"book_title": "Emma", "text": "Lovely", "rating": 4}
+
+### FAIL rating out of range -> 422
+POST {{base}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{alice09}}
+
+{"book_title": "Emma", "text": "x", "rating": 9}
+
+### FAIL no token -> 401
+PATCH {{base}}/reviews/2
+Content-Type: application/json
+
+{"rating": 1}
+
+### Alice deletes her review -> 204
+DELETE {{base}}/reviews/1
+Authorization: Bearer {{alice09}}
+
+###
+# ==========================================================================
+# 10 Change password
+# Start it:  cd 10_change_password && fastapi dev main.py
+# ==========================================================================
+@token10 = {{login10.response.body.$.access_token}}
+
+### Register -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Login -> 200 (@token10)
+# @name login10
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### FAIL wrong old password -> 400
+PATCH {{base}}/auth/me/password
+Content-Type: application/json
+Authorization: Bearer {{token10}}
+
+{"old_password": "WRONG", "new_password": "evenmoresecret"}
+
+### FAIL new password too short -> 422
+PATCH {{base}}/auth/me/password
+Content-Type: application/json
+Authorization: Bearer {{token10}}
+
+{"old_password": "supersecret", "new_password": "short"}
+
+### FAIL no token -> 401
+PATCH {{base}}/auth/me/password
+Content-Type: application/json
+
+{"old_password": "supersecret", "new_password": "evenmoresecret"}
+
+### Change it -> 200
+PATCH {{base}}/auth/me/password
+Content-Type: application/json
+Authorization: Bearer {{token10}}
+
+{"old_password": "supersecret", "new_password": "evenmoresecret"}
+
+### FAIL login with the OLD password -> 401
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### Login with the NEW password -> 200
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=evenmoresecret
+
+###
+# ==========================================================================
+# 11 CORS
+# Start it:  cd 11_cors && fastapi dev main.py
+# Browser demo: cd frontend && python -m http.server 5173  -> open http://localhost:5173
+# Seeded: student@example.com / password123
+# ==========================================================================
+@token11 = {{login11.response.body.$.access_token}}
+
+### Preflight from an ALLOWED origin -> 200 (see access-control-allow-origin)
+OPTIONS {{base}}/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+
+### Login -> 200 (@token11)
+# @name login11
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=student@example.com&password=password123
+
+### Me from an allowed origin -> 200 + CORS header
+GET {{base}}/auth/me
+Origin: http://localhost:3000
+Authorization: Bearer {{token11}}
+
+### FAIL preflight from another origin -> 400
+OPTIONS {{base}}/auth/login
+Origin: http://evil.example
+Access-Control-Request-Method: POST
+
+###
+# ==========================================================================
+# 12 Custom middleware
+# Start it:  cd 12_custom_middleware && fastapi dev main.py
+# No .env needed. Look at the response HEADERS and the terminal.
+# ==========================================================================
+
+### Root -> 200 (X-Process-Time-ms + X-Request-ID)
+GET {{base}}/
+
+### Slow route -> 200 (about 500 ms)
+GET {{base}}/slow
+
+### FAIL missing item -> 404 (headers still added)
+GET {{base}}/items/99
+
+### FAIL not an int -> 422
+GET {{base}}/items/abc
+
+###
+# ==========================================================================
+# 13 Background tasks
+# Start it:  cd 13_background_tasks && fastapi dev main.py
+# Watch the terminal: the email finishes ~3 s AFTER the response.
+# ==========================================================================
+
+### Register -> 201 immediately
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Sent emails -> 200 ([] at first, filled 3 s later)
+GET {{base}}/emails/sent
+
+### FAIL same email -> 409 (no email queued)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### FAIL short password -> 422
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "x@example.com", "password": "short"}
+
+###
+# ==========================================================================
+# 14 Lifespan
+# Start it:  cd 14_lifespan && fastapi dev main.py
+# The admin comes from ADMIN_EMAIL / ADMIN_PASSWORD in .env (admin@example.com / admin12345)
+# ==========================================================================
+@admin14 = {{loginAdmin14.response.body.$.access_token}}
+@ana14 = {{loginAna14.response.body.$.access_token}}
+
+### Login as the first admin -> 200 (@admin14)
+# @name loginAdmin14
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Me -> 200 (role admin)
+GET {{base}}/auth/me
+Authorization: Bearer {{admin14}}
+
+### Admin lists users -> 200
+GET {{base}}/admin/users
+Authorization: Bearer {{admin14}}
+
+### Register a normal user -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "anapass123"}
+
+### Login as ana -> 200 (@ana14)
+# @name loginAna14
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ana@example.com&password=anapass123
+
+### FAIL ana lists users -> 403
+GET {{base}}/admin/users
+Authorization: Bearer {{ana14}}
+
+### FAIL no token -> 401
+GET {{base}}/admin/users
+
+### FAIL admin email already taken -> 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "admin@example.com", "password": "whatever123"}
+
+###
+# ==========================================================================
+# 15 Bookstore (full)
+# Start it:  cd 15_bookstore_full && fastapi dev main.py
+# Admin from .env: admin@example.com / admin12345
+# ==========================================================================
+@user15 = {{loginUser15.response.body.$.access_token}}
+@admin15 = {{loginAdmin15.response.body.$.access_token}}
+
+### Public books -> 200
+GET {{base}}/books
+
+### Public authors -> 200
+GET {{base}}/authors
+
+### Books by author -> 200
+GET {{base}}/authors/2/books
+
+### Register -> 201 (welcome email printed)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### FAIL same email -> 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret"}
+
+### Login as ada -> 200 (@user15)
+# @name loginUser15
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ada@example.com&password=supersecret
+
+### Login as admin -> 200 (@admin15)
+# @name loginAdmin15
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Me -> 200
+GET {{base}}/auth/me
+Authorization: Bearer {{user15}}
+
+### FAIL create a book without a token -> 401
+POST {{base}}/books
+Content-Type: application/json
+
+{"title": "Emma", "author_id": 1}
+
+### User creates a book -> 201
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"title": "Emma", "year": 1815, "author_id": 1}
+
+### FAIL unknown author -> 404
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"title": "Ghost", "author_id": 99}
+
+### FAIL empty title -> 422
+POST {{base}}/books
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"title": "", "author_id": 1}
+
+### User creates an author -> 201
+POST {{base}}/authors
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"name": "Jane Austen"}
+
+### FAIL duplicate author -> 409
+POST {{base}}/authors
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"name": "Jane Austen"}
+
+### Admin reviews book 1 -> 201 (review 1)
+POST {{base}}/books/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{admin15}}
+
+{"rating": 5, "text": "Great"}
+
+### User reviews book 1 -> 201 (review 2)
+POST {{base}}/books/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"rating": 4, "text": "Nice"}
+
+### Reviews of book 1 -> 200
+GET {{base}}/books/1/reviews
+
+### User edits OWN review -> 200
+PATCH {{base}}/reviews/2
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"rating": 2}
+
+### FAIL user edits the admin's review -> 403
+PATCH {{base}}/reviews/1
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"rating": 1}
+
+### FAIL user deletes a book -> 403
+DELETE {{base}}/books/3
+Authorization: Bearer {{user15}}
+
+### Admin deletes a book -> 204
+DELETE {{base}}/books/3
+Authorization: Bearer {{admin15}}
+
+### FAIL deleted book -> 404
+GET {{base}}/books/3
+
+### FAIL wrong old password -> 400
+PATCH {{base}}/auth/me/password
+Content-Type: application/json
+Authorization: Bearer {{user15}}
+
+{"old_password": "nope", "new_password": "newpass123"}
