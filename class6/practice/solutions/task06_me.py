@@ -1,5 +1,3 @@
-"""Solution 6: GET /auth/me with CurrentUser."""
-
 from typing import Annotated
 
 import jwt
@@ -37,5 +35,3 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 @app.get("/auth/me")
 def read_me(user: CurrentUser):
     return {"id": user.id, "email": user.email, "role": user.role}
-
-# no token -> 401 "Not authenticated"   fake token -> 401   real token -> 200

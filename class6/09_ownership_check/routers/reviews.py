@@ -1,10 +1,3 @@
-"""
-Reviews router with an OWNERSHIP check:
-  * anyone can read reviews
-  * logged-in users can write reviews (owner_id = their id)
-  * only the OWNER (or an admin) can edit/delete a review -> otherwise 403
-"""
-
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
@@ -17,7 +10,6 @@ router = APIRouter(prefix="/reviews", tags=["reviews"])
 
 
 def get_review_for_change(review_id: int, user: User, db) -> Review:
-    """Load a review and make sure `user` may change it. Raises 404 or 403."""
     review = db.get(Review, review_id)
     if review is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
@@ -34,7 +26,6 @@ def list_reviews(db: DbSession):
 
 @router.post("", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
 def create_review(data: ReviewCreate, db: DbSession, user: CurrentUser):
-    # owner_id comes from the TOKEN, never from the request body
     review = Review(**data.model_dump(), owner_id=user.id)
     db.add(review)
     db.commit()

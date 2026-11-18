@@ -1,5 +1,3 @@
-"""/authors: public reads, logged-in users create, admins delete."""
-
 from fastapi import APIRouter, status
 from sqlalchemy import select
 
@@ -47,5 +45,5 @@ def create_author(data: AuthorCreate, db: DbSession, user: CurrentUser):
 
 @router.delete("/{author_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_author(author_id: int, db: DbSession, admin: AdminUser) -> None:
-    db.delete(get_author_or_404(author_id, db))  # cascade deletes their books too
+    db.delete(get_author_or_404(author_id, db))
     db.commit()

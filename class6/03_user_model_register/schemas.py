@@ -1,5 +1,3 @@
-"""Pydantic schemas = what the API accepts and returns."""
-
 from enum import StrEnum
 from typing import Annotated
 
@@ -11,13 +9,13 @@ class Role(StrEnum):
     admin = "admin"
 
 
-class UserCreate(BaseModel):  # what the client sends to /auth/register
+class UserCreate(BaseModel):
     email: EmailStr
     password: Annotated[str, Field(min_length=8)]
 
 
-class UserOut(BaseModel):  # what we send back: NO password field at all
-    model_config = ConfigDict(from_attributes=True)  # read from a SQLAlchemy object
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     email: str

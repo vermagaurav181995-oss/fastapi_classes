@@ -1,10 +1,3 @@
-"""
-Books router with ROLES:
-  GET    /books        -> public
-  POST   /books        -> any logged-in user   (CurrentUser)
-  DELETE /books/{id}   -> admins only          (AdminUser = require_role("admin"))
-"""
-
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
@@ -32,7 +25,6 @@ def create_book(data: BookCreate, db: DbSession, user: CurrentUser):
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_book(book_id: int, db: DbSession, admin: AdminUser) -> None:
-    # Reaching this line means: valid token (else 401) AND role == "admin" (else 403)
     book = db.get(Book, book_id)
     if book is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")

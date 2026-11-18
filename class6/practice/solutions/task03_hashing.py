@@ -1,5 +1,3 @@
-"""Solution 3: hash_password / verify_password; the same password hashed twice."""
-
 from fastapi import FastAPI
 from pwdlib import PasswordHash
 
@@ -31,5 +29,3 @@ def hash_twice(password: str = "secret123"):
 @app.get("/verify")
 def verify(password: str, attempt: str):
     return {"is_valid": verify_password(attempt, hash_password(password))}
-
-# GET /hash-twice -> equal: false    GET /verify?password=a&attempt=b -> is_valid: false

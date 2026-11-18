@@ -1,5 +1,3 @@
-"""Solution 14: lifespan that creates the first admin from ADMIN_EMAIL / ADMIN_PASSWORD."""
-
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -24,5 +22,3 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Task 14 - solution", lifespan=lifespan)
 app.include_router(login_router)
-
-# start -> "created admin boss@example.com"; restart -> nothing created; log in as the admin -> 200

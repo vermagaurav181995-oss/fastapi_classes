@@ -1,5 +1,3 @@
-"""Solution 2: the User model."""
-
 from fastapi import FastAPI
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -7,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from common import engine
 
 
-class Base(DeclarativeBase):  # own Base so this task doesn't clash with common.User
+class Base(DeclarativeBase):
     pass
 
 
@@ -28,5 +26,3 @@ app = FastAPI(title="Task 2 - solution")
 @app.get("/columns")
 def columns():
     return {c.name: {"type": str(c.type), "unique": bool(c.unique)} for c in User.__table__.columns}
-
-# GET /columns -> id, email (unique), hashed_password, role, is_active

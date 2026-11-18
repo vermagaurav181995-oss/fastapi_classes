@@ -1,16 +1,3 @@
-"""
-Tests for every Class 6 example.
-
-Run from the class6/ folder:   pytest -v test_all_examples.py
-
-How it works
-* SECRET_KEY comes from an environment variable (no .env file needed).
-* Every test gets its OWN temporary SQLite file: DATABASE_URL points to it, and
-  app.dependency_overrides[get_db] hands the routes sessions on that same file.
-* Each example folder has its own config.py / database.py / routers/ ..., so
-  load_example() imports them in isolation and forgets them afterwards.
-"""
-
 import importlib
 import os
 import sys
@@ -32,7 +19,6 @@ os.environ["SECRET_KEY"] = TEST_SECRET
 
 
 def load_example(folder: Path, module: str = "main") -> dict:
-    """Import `module` from `folder`; return every module it loaded from that folder."""
     before = set(sys.modules)
     sys.path.insert(0, str(folder))
     try:
@@ -43,17 +29,16 @@ def load_example(folder: Path, module: str = "main") -> dict:
     for name in set(sys.modules) - before:
         mod = sys.modules[name]
         if (getattr(mod, "__file__", None) or "").startswith(str(folder)):
-            loaded[name] = sys.modules.pop(name)  # forget it so the next example is clean
+            loaded[name] = sys.modules.pop(name)
     return loaded
 
 
 @pytest.fixture
 def example(tmp_path, monkeypatch):
-    """example("05_login") -> SimpleNamespace(client, main, db_session, modules)."""
     opened = []
 
     def _make(folder: str, module: str = "main", env: dict | None = None):
-        db_url = f"sqlite:///{tmp_path / f'test_{uuid.uuid4().hex[:8]}.db'}"  # fresh DB per app
+        db_url = f"sqlite:///{tmp_path / f'test_{uuid.uuid4().hex[:8]}.db'}"
         monkeypatch.setenv("DATABASE_URL", db_url)
         for key, value in (env or {}).items():
             monkeypatch.setenv(key, value)
@@ -79,7 +64,7 @@ def example(tmp_path, monkeypatch):
             opened.append(engine.dispose)
 
         client = TestClient(main.app)
-        client.__enter__()  # runs the lifespan (startup)
+        client.__enter__()
         opened.append(lambda: client.__exit__(None, None, None))
         ns.client = client
         return ns
@@ -89,7 +74,6 @@ def example(tmp_path, monkeypatch):
         close()
 
 
-# ------------------------------------------------------------------ helpers
 def register(c, email="ada@example.com", password="supersecret"):
     return c.post("/auth/register", json={"email": email, "password": password})
 
@@ -112,7 +96,6 @@ def expired_bearer(user_id: int = 1) -> dict:
 FAKE = {"Authorization": "Bearer fake.token.value"}
 
 
-# ======================================================================== 01
 def test_01_password_hashing(example):
     c = example("01_password_hashing").client
     data = c.get("/demo/hash?password=secret123").json()
@@ -123,19 +106,16 @@ def test_01_password_hashing(example):
     assert c.get("/demo/hash?password=").status_code == 422
 
 
-# ======================================================================== 02
 def test_02_settings_secret_key(example, monkeypatch):
     ex = example("02_settings_secret_key")
     data = ex.client.get("/settings").json()
     assert data["algorithm"] == "HS256" and data["secret_key_length"] == len(TEST_SECRET)
     assert ex.client.get("/settings/secret_key").status_code == 404
-    # Without SECRET_KEY the Settings class refuses to load
     monkeypatch.delenv("SECRET_KEY")
     with pytest.raises(ValidationError, match="secret_key"):
         ex.modules["config"].Settings(_env_file=None)
 
 
-# ======================================================================== 03
 def test_03_register(example):
     c = example("03_user_model_register").client
     r = register(c)
@@ -147,7 +127,6 @@ def test_03_register(example):
     assert register(c, "not-an-email").status_code == 422
 
 
-# ======================================================================== 04
 def test_04_jwt(example):
     c = example("04_jwt_create_decode").client
     token = c.get("/demo/token?user_id=7").json()["access_token"]
@@ -161,7 +140,6 @@ def test_04_jwt(example):
     assert c.get("/demo/token?user_id=0").status_code == 422
 
 
-# ======================================================================== 05
 def test_05_login(example):
     c = example("05_login").client
     user_id = register(c).json()["id"]
@@ -178,7 +156,6 @@ def test_05_login(example):
     assert c.post("/auth/login", json={"username": "ada@example.com", "password": "supersecret"}).status_code == 422
 
 
-# ======================================================================== 06
 def test_06_me(example):
     ex = example("06_get_current_user_me")
     c = ex.client
@@ -192,7 +169,6 @@ def test_06_me(example):
     expired = c.get("/auth/me", headers=expired_bearer(1))
     assert expired.status_code == 401 and expired.json()["detail"] == "Could not validate credentials"
 
-    # A deactivated user is refused even with a valid token
     headers = bearer(c)
     with ex.db_session() as db:
         db.get(ex.modules["models"].User, 1).is_active = False
@@ -200,7 +176,6 @@ def test_06_me(example):
     assert c.get("/auth/me", headers=headers).status_code == 403
 
 
-# ======================================================================== 07
 def test_07_protect_router(example):
     c = example("07_protect_router").client
     assert c.get("/public/info").status_code == 200
@@ -215,7 +190,6 @@ def test_07_protect_router(example):
     assert c.get("/books/99", headers=h).status_code == 404
 
 
-# ======================================================================== 08
 def test_08_roles(example):
     c = example("08_roles_require_role").client
     user = bearer(c, "user@example.com", "user12345")
@@ -230,7 +204,6 @@ def test_08_roles(example):
     assert c.delete("/books/999", headers=admin).status_code == 404
 
 
-# ======================================================================== 09
 def test_09_ownership(example):
     c = example("09_ownership_check").client
     alice = bearer(c, "alice@example.com", "alice12345")
@@ -247,7 +220,6 @@ def test_09_ownership(example):
     assert c.delete("/reviews/1", headers=alice).status_code == 204
 
 
-# ======================================================================== 10
 def test_10_change_password(example):
     c = example("10_change_password").client
     register(c)
@@ -261,7 +233,6 @@ def test_10_change_password(example):
     assert login(c, password="evenmoresecret").status_code == 200
 
 
-# ======================================================================== 11
 def test_11_cors(example):
     c = example("11_cors").client
     preflight = {"Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST"}
@@ -279,7 +250,6 @@ def test_11_cors(example):
     assert r.status_code == 401 and "access-control-allow-origin" not in r.headers
 
 
-# ======================================================================== 12
 def test_12_middleware(example, capsys):
     c = example("12_custom_middleware").client
     r = c.get("/")
@@ -295,20 +265,17 @@ def test_12_middleware(example, capsys):
     assert c.get("/items/abc").status_code == 422
 
 
-# ======================================================================== 13
 def test_13_background_tasks(example):
     ex = example("13_background_tasks")
-    ex.main.EMAIL_DELAY_SECONDS = 0  # don't make the test wait 3 seconds
+    ex.main.EMAIL_DELAY_SECONDS = 0
     c = ex.client
     assert register(c).status_code == 201
-    # TestClient runs background tasks before returning, so it already ran:
     assert c.get("/emails/sent").json() == ["ada@example.com"]
     assert register(c).status_code == 409
     assert register(c, "x@example.com", "short").status_code == 422
-    assert ex.main.SENT_EMAILS == ["ada@example.com"]  # no email for failed requests
+    assert ex.main.SENT_EMAILS == ["ada@example.com"]
 
 
-# ======================================================================== 14
 def test_14_lifespan(example, capsys):
     env = {"ADMIN_EMAIL": "admin@example.com", "ADMIN_PASSWORD": "admin12345"}
     ex = example("14_lifespan", env=env)
@@ -323,14 +290,12 @@ def test_14_lifespan(example, capsys):
     assert c.get("/admin/users").status_code == 401
     assert register(c, "admin@example.com", "whatever123").status_code == 409
 
-    # A second startup must NOT create another admin
     with TestClient(ex.main.app):
         pass
     out = capsys.readouterr().out
     assert "an admin already exists" in out and "SHUTDOWN" in out
 
 
-# ======================================================================== 15
 def test_15_bookstore(example, capsys):
     env = {"ADMIN_EMAIL": "admin@example.com", "ADMIN_PASSWORD": "admin12345"}
     c = example("15_bookstore_full", env=env).client
@@ -365,18 +330,16 @@ def test_15_bookstore(example, capsys):
     assert c.delete("/books/3", headers=admin).status_code == 204
     assert c.get("/books/3").json()["error"] == "NotFound"
     assert c.delete("/authors/1", headers=admin).status_code == 204
-    assert c.get("/books/1").status_code == 404  # cascade removed Dune
+    assert c.get("/books/1").status_code == 404
     assert c.get("/auth/me", headers=expired_bearer(2)).status_code == 401
     assert c.patch("/auth/me/password", json={"old_password": "x", "new_password": "newpass123"}, headers=user).status_code == 400
 
 
-# ================================================================== practice
 PRACTICE = HERE / "practice"
 
 
 @pytest.mark.parametrize("path", sorted(PRACTICE.glob("task*.py")), ids=lambda p: p.stem)
 def test_practice_starter_loads(example, path):
-    """Starters are unfinished on purpose, but they must import and start."""
     assert example("practice", path.stem).client.get("/openapi.json").status_code == 200
 
 

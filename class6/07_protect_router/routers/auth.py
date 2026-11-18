@@ -1,7 +1,3 @@
-"""
-/auth routes: register, login, me  (built step by step in examples 03-06).
-"""
-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,7 +25,6 @@ def register(data: UserCreate, db: DbSession):
 
 @router.post("/login", response_model=Token)
 def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession):
-    # OAuth2 forms always call the field "username" -> we put the EMAIL in it
     user = db.scalar(select(User).where(User.email == form.username))
     if user is None or not verify_password(form.password, user.hashed_password):
         raise HTTPException(

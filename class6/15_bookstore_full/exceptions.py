@@ -1,5 +1,3 @@
-"""Custom exceptions + handlers that return {"error": ..., "message": ...}."""
-
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 

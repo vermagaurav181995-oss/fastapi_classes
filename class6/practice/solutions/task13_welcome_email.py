@@ -1,5 +1,3 @@
-"""Solution 13: fake welcome email with BackgroundTasks after register."""
-
 import time
 from typing import Annotated
 
@@ -36,5 +34,3 @@ def register(data: UserCreate, db: DbSession, background_tasks: BackgroundTasks)
     db.commit()
     background_tasks.add_task(send_welcome_email, user.email)
     return {"id": user.id, "email": user.email}
-
-# register -> 201 instantly; 3 s later the terminal prints the email line

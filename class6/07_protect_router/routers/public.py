@@ -1,5 +1,3 @@
-"""Public router: NO protection at all, to compare with routers/books.py."""
-
 from fastapi import APIRouter
 
 router = APIRouter(prefix="/public", tags=["public"])

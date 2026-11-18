@@ -1,13 +1,3 @@
-"""
-Shared building blocks for the practice tasks (already finished for you).
-Each task file imports what it needs from here and writes ONE new piece.
-
-Reads .env from practice/ (copy practice/.env.example to practice/.env).
-Demo users created by seed_demo_users():
-    student@example.com / password123  (user)
-    admin@example.com   / admin12345   (admin)
-"""
-
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated
@@ -24,7 +14,6 @@ HERE = Path(__file__).parent
 
 
 class Settings(BaseSettings):
-    # practice/common.py reads practice/.env; solutions/common.py reads it too (parent folder)
     model_config = SettingsConfigDict(env_file=(HERE.parent / ".env", HERE / ".env"), extra="ignore")
     secret_key: str
     algorithm: str = "HS256"
@@ -36,7 +25,6 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# ---- database ----
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
@@ -64,7 +52,6 @@ def get_db():
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-# ---- hashing + tokens ----
 password_hash = PasswordHash.recommended()
 
 
@@ -82,7 +69,6 @@ def create_access_token(user_id: int, expires_minutes: int | None = None) -> str
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
-# ---- current user ----
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
@@ -100,9 +86,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSessio
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-# ---- setup helpers ----
 def seed_demo_users() -> None:
-    """Create tables + the two demo users (safe to call many times)."""
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         for email, password, role in [("student@example.com", "password123", "user"), ("admin@example.com", "admin12345", "admin")]:
@@ -111,7 +95,6 @@ def seed_demo_users() -> None:
         db.commit()
 
 
-# ---- a ready-made POST /auth/login (tasks 6-14 include it) ----
 login_router = APIRouter(prefix="/auth", tags=["auth"])
 
 

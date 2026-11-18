@@ -1,12 +1,10 @@
-"""Pydantic schemas: Create (in), Update (PATCH), Out (responses)."""
-
 from enum import StrEnum
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
-class ORMModel(BaseModel):  # base for every *Out schema: read SQLAlchemy objects
+class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -15,7 +13,6 @@ class Role(StrEnum):
     admin = "admin"
 
 
-# ---- users / auth ----
 class UserCreate(BaseModel):
     email: EmailStr
     password: Annotated[str, Field(min_length=8)]
@@ -38,7 +35,6 @@ class PasswordChange(BaseModel):
     new_password: Annotated[str, Field(min_length=8)]
 
 
-# ---- authors ----
 class AuthorCreate(BaseModel):
     name: Annotated[str, Field(min_length=2, max_length=100)]
 
@@ -48,7 +44,6 @@ class AuthorOut(ORMModel):
     name: str
 
 
-# ---- books ----
 class BookCreate(BaseModel):
     title: Annotated[str, Field(min_length=1, max_length=200)]
     year: Annotated[int, Field(ge=0, le=2100)] | None = None
@@ -62,7 +57,6 @@ class BookOut(ORMModel):
     author_id: int
 
 
-# ---- reviews ----
 class ReviewCreate(BaseModel):
     rating: Annotated[int, Field(ge=1, le=5)]
     text: Annotated[str, Field(min_length=1, max_length=1000)]

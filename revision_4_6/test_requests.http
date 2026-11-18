@@ -1,0 +1,392 @@
+# Revision 4 + 6: requests for the VS Code "REST Client" extension.
+# Start ONE example (all use port 8000), then send the requests of its section from top to bottom.
+# The login requests are named (# @name ...); @token variables reuse their access_token.
+
+@base = http://127.0.0.1:8000
+@apiKey = paste-your-API_KEY-from-02_class4_recap/.env
+
+###
+# 01 Request journey
+# Start it:  cd 01_request_journey && fastapi dev main.py
+@adminToken = {{loginAdmin01.response.body.$.access_token}}
+@userToken = {{loginUser01.response.body.$.access_token}}
+
+### Public list -> 200
+GET {{base}}/books
+
+### CORS header for localhost:5173 -> 200
+GET {{base}}/books
+Origin: http://localhost:5173
+
+### Login as admin -> 200
+# @name loginAdmin01
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Login as user -> 200
+# @name loginUser01
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=user@example.com&password=user12345
+
+### Me -> 200
+GET {{base}}/auth/me
+Authorization: Bearer {{userToken}}
+
+### FAIL delete without a token -> 401
+DELETE {{base}}/books/1
+
+### FAIL delete book 0 as admin -> 422
+DELETE {{base}}/books/0
+Authorization: Bearer {{adminToken}}
+
+### FAIL delete as normal user -> 403
+DELETE {{base}}/books/1
+Authorization: Bearer {{userToken}}
+
+### FAIL delete a missing book -> 404
+DELETE {{base}}/books/99
+Authorization: Bearer {{adminToken}}
+
+### Delete as admin -> 204
+DELETE {{base}}/books/1
+Authorization: Bearer {{adminToken}}
+
+### Deletion log (filled by the background task) -> 200
+GET {{base}}/books/admin/deletions
+Authorization: Bearer {{adminToken}}
+
+###
+# 02 Class 4 recap
+# Start it:  cd 02_class4_recap  (set @apiKey above first) && fastapi dev main.py
+
+### Path -> 200
+GET {{base}}/items/1
+
+### FAIL path below 1 -> 422
+GET {{base}}/items/0
+
+### FAIL missing item -> 404
+GET {{base}}/items/99
+
+### Query -> 200
+GET {{base}}/search?q=no
+
+### FAIL query too short -> 422
+GET {{base}}/search?q=a
+
+### List query -> 200
+GET {{base}}/filter?tag=gift&tag=kitchen
+
+### FAIL no tags -> 422
+GET {{base}}/filter
+
+### Header -> 200
+GET {{base}}/client-info
+X-Client-Version: 2.1
+
+### FAIL missing header -> 422
+GET {{base}}/client-info
+
+### Set a cookie -> 200
+GET {{base}}/set-cookie
+
+### Read it back -> 200
+GET {{base}}/read-cookie
+
+### FAIL cookie with the wrong name -> 401
+GET {{base}}/read-cookie
+Cookie: other=1
+
+### Form login -> 200
+POST {{base}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice&password=wonderland
+
+### FAIL wrong password -> 401
+POST {{base}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=alice&password=nope
+
+### Upload a PNG -> 200
+POST {{base}}/upload
+Content-Type: multipart/form-data; boundary=----RevisionBoundary
+
+------RevisionBoundary
+Content-Disposition: form-data; name="file"; filename="cat.png"
+Content-Type: image/png
+
+< ./sample_files/cat.png
+------RevisionBoundary--
+
+### FAIL upload a text file -> 400
+POST {{base}}/upload
+Content-Type: multipart/form-data; boundary=----RevisionBoundary
+
+------RevisionBoundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+< ./sample_files/notes.txt
+------RevisionBoundary--
+
+### JSON body -> 201
+POST {{base}}/items
+Content-Type: application/json
+
+{"name": "Lamp", "price": 20}
+
+### FAIL negative price -> 422
+POST {{base}}/items
+Content-Type: application/json
+
+{"name": "Lamp", "price": -1}
+
+### PATCH only the price -> 200
+PATCH {{base}}/items/1
+Content-Type: application/json
+
+{"price": 2.0}
+
+### FAIL PATCH a missing item -> 404
+PATCH {{base}}/items/99
+Content-Type: application/json
+
+{"price": 2.0}
+
+### Register -> 201
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret", "confirm_password": "supersecret"}
+
+### FAIL same email -> 409
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "ada@example.com", "password": "supersecret", "confirm_password": "supersecret"}
+
+### FAIL passwords differ -> 422
+POST {{base}}/register
+Content-Type: application/json
+
+{"email": "bo@example.com", "password": "supersecret", "confirm_password": "different1"}
+
+### Function dependency -> 200
+GET {{base}}/books?skip=10&limit=2
+
+### FAIL limit too big -> 422
+GET {{base}}/books?limit=50
+
+### Class dependency -> 200
+GET {{base}}/authors?skip=10
+
+### FAIL negative skip -> 422
+GET {{base}}/authors?skip=-1
+
+### Yield dependency -> 200
+GET {{base}}/reports/2025
+
+### FAIL missing report -> 404
+GET {{base}}/reports/1999
+
+### Admin router with the key -> 200
+GET {{base}}/admin/stats
+X-API-Key: {{apiKey}}
+
+### FAIL admin router without a key -> 403
+GET {{base}}/admin/stats
+
+###
+# 03 Class 6 recap
+# Start it:  cd 03_class6_recap && fastapi dev main.py
+@anaToken = {{loginAna03.response.body.$.access_token}}
+@adminToken03 = {{loginAdmin03.response.body.$.access_token}}
+
+### Register -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "anapass123"}
+
+### FAIL same email -> 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "anapass123"}
+
+### FAIL short password -> 422
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "bo@example.com", "password": "short"}
+
+### Login as ana -> 200
+# @name loginAna03
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ana@example.com&password=anapass123
+
+### FAIL wrong password -> 401
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ana@example.com&password=nope
+
+### Me -> 200
+GET {{base}}/auth/me
+Authorization: Bearer {{anaToken}}
+
+### FAIL me without a token -> 401
+GET {{base}}/auth/me
+
+### Login as admin -> 200
+# @name loginAdmin03
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Admin lists users -> 200
+GET {{base}}/admin/users
+Authorization: Bearer {{adminToken03}}
+
+### FAIL ana lists users -> 403
+GET {{base}}/admin/users
+Authorization: Bearer {{anaToken}}
+
+### Welcome emails sent -> 200
+GET {{base}}/admin/emails
+Authorization: Bearer {{adminToken03}}
+
+### CORS for localhost:5173 -> 200
+GET {{base}}/auth/me
+Origin: http://localhost:5173
+Authorization: Bearer {{anaToken}}
+
+###
+# 05 Notes API (solution)
+# Start it:  cd 05_notes_api_challenge/solution && fastapi dev main.py
+@anaNotes = {{loginAnaNotes.response.body.$.access_token}}
+@benNotes = {{loginBenNotes.response.body.$.access_token}}
+@adminNotes = {{loginAdminNotes.response.body.$.access_token}}
+
+### Register ana -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "anapass123"}
+
+### Register ben -> 201
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ben@example.com", "password": "benpass123"}
+
+### FAIL ana again -> 409
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email": "ana@example.com", "password": "anapass123"}
+
+### Login ana -> 200
+# @name loginAnaNotes
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ana@example.com&password=anapass123
+
+### Login ben -> 200
+# @name loginBenNotes
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=ben@example.com&password=benpass123
+
+### Login admin -> 200
+# @name loginAdminNotes
+POST {{base}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin@example.com&password=admin12345
+
+### Me -> 200
+GET {{base}}/auth/me
+Authorization: Bearer {{anaNotes}}
+
+### Ana creates note 1 -> 201
+POST {{base}}/notes
+Content-Type: application/json
+Authorization: Bearer {{anaNotes}}
+
+{"title": "Shopping", "content": "milk, eggs"}
+
+### Ben creates note 2 -> 201
+POST {{base}}/notes
+Content-Type: application/json
+Authorization: Bearer {{benNotes}}
+
+{"title": "Ben ideas", "content": "start a band"}
+
+### Ana sees only her notes -> 200
+GET {{base}}/notes
+Authorization: Bearer {{anaNotes}}
+
+### Search -> 200
+GET {{base}}/notes?q=milk
+Authorization: Bearer {{anaNotes}}
+
+### Paginate -> 200
+GET {{base}}/notes?skip=0&limit=1
+Authorization: Bearer {{anaNotes}}
+
+### FAIL search too short -> 422
+GET {{base}}/notes?q=a
+Authorization: Bearer {{anaNotes}}
+
+### Ana reads her note -> 200
+GET {{base}}/notes/1
+Authorization: Bearer {{anaNotes}}
+
+### FAIL ana reads ben's note -> 403
+GET {{base}}/notes/2
+Authorization: Bearer {{anaNotes}}
+
+### Ana edits her note -> 200
+PATCH {{base}}/notes/1
+Content-Type: application/json
+Authorization: Bearer {{anaNotes}}
+
+{"content": "milk, eggs, bread"}
+
+### FAIL ben edits ana's note -> 403
+PATCH {{base}}/notes/1
+Content-Type: application/json
+Authorization: Bearer {{benNotes}}
+
+{"title": "Hacked"}
+
+### FAIL ben deletes ana's note -> 403
+DELETE {{base}}/notes/1
+Authorization: Bearer {{benNotes}}
+
+### FAIL missing note -> 404
+GET {{base}}/notes/99
+Authorization: Bearer {{anaNotes}}
+
+### FAIL notes without a token -> 401
+GET {{base}}/notes
+
+### Admin deletes ben's note -> 204
+DELETE {{base}}/notes/2
+Authorization: Bearer {{adminNotes}}
+
+### Ana deletes her own note -> 204
+DELETE {{base}}/notes/1
+Authorization: Bearer {{anaNotes}}

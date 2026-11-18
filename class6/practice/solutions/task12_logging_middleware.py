@@ -1,5 +1,3 @@
-"""Solution 12: logging middleware printing method, path, status and time."""
-
 import time
 
 from fastapi import FastAPI, HTTPException, Request
@@ -25,5 +23,3 @@ def hello():
 @app.get("/fail")
 def fail():
     raise HTTPException(status_code=404, detail="Nothing here")
-
-# terminal: "GET /hello -> 200 (0.31 ms)"   "GET /fail -> 404 (0.20 ms)"

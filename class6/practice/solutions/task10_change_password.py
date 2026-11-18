@@ -1,5 +1,3 @@
-"""Solution 10: PATCH /auth/me/password that needs the old password."""
-
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, status
@@ -24,5 +22,3 @@ def change_password(data: PasswordChange, user: CurrentUser, db: DbSession):
     user.hashed_password = hash_password(data.new_password)
     db.commit()
     return {"message": "Password changed"}
-
-# wrong old password -> 400     correct -> 200, then log in with the new one

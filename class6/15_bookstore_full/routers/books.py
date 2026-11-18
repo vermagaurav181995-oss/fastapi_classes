@@ -1,5 +1,3 @@
-"""/books: public reads (with pagination), logged-in users create, admins delete."""
-
 from typing import Annotated
 
 from fastapi import APIRouter, Query, status

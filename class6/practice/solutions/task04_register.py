@@ -1,5 +1,3 @@
-"""Solution 4: POST /auth/register with 409 for a duplicate email and no hash in the response."""
-
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, status
@@ -33,5 +31,3 @@ def register(data: UserCreate, db: DbSession):
     db.commit()
     db.refresh(user)
     return user
-
-# first register -> 201 (no hashed_password in it)   same email again -> 409

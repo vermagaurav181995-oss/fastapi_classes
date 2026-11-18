@@ -1,5 +1,3 @@
-"""Solution 8: protect the whole books router."""
-
 from fastapi import APIRouter, Depends, FastAPI
 
 from common import get_current_user, login_router, seed_demo_users
@@ -22,5 +20,3 @@ def count_books():
 app = FastAPI(title="Task 8 - solution")
 app.include_router(login_router)
 app.include_router(books)
-
-# GET /books without token -> 401     with token -> 200

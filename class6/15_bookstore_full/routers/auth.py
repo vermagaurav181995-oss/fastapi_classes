@@ -1,7 +1,3 @@
-"""
-/auth: register (+ welcome email in the background), login, me, change password.
-"""
-
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -18,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def send_welcome_email(email: str) -> None:
-    print(f"[email] welcome email sent to {email}")  # pretend this is slow
+    print(f"[email] welcome email sent to {email}")
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)

@@ -1,9 +1,5 @@
-"""Security helpers: password hashing."""
-
 from pwdlib import PasswordHash
 
-# ---- 1. Password hashing -------------------------------------------------
-# recommended() = Argon2: slow on purpose, and salted (same password -> different hash)
 password_hash = PasswordHash.recommended()
 
 

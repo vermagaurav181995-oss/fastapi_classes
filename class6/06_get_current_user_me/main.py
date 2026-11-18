@@ -1,16 +1,3 @@
-"""
-06 - get_current_user and GET /auth/me
-======================================
-security.py now has the key dependency chain:
-    oauth2_scheme     -> reads "Authorization: Bearer <token>" (401 if missing)
-    get_current_user  -> decodes the token, loads the user, checks is_active
-    CurrentUser       -> Annotated[User, Depends(get_current_user)]
-Any route that takes `user: CurrentUser` is now protected.
-
-Setup:  cp .env.example .env
-Run:    fastapi dev main.py         Docs: http://127.0.0.1:8000/docs
-"""
-
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -51,20 +38,4 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession):
 
 @app.get("/auth/me", response_model=UserOut)
 def read_me(user: CurrentUser):
-    # If we get here, the token was valid and `user` is a real, active User row
     return user
-
-
-# ---------------------------------------------------------------------------
-# TRY IT
-# ---------------------------------------------------------------------------
-# 1. POST /auth/register {"email": "ada@example.com", "password": "supersecret"} -> 201
-# 2. POST /auth/login FORM username=ada@example.com&password=supersecret -> 200 {access_token}
-# 3. GET  /auth/me   header  Authorization: Bearer <access_token>
-#      -> 200 {"id": 1, "email": "ada@example.com", "role": "user", "is_active": true}
-#
-# These should FAIL:
-# GET /auth/me  (no Authorization header)           -> 401 "Not authenticated"
-# GET /auth/me  Authorization: Bearer fake.token.x  -> 401 "Could not validate credentials"
-# GET /auth/me  with an EXPIRED token (set ACCESS_TOKEN_EXPIRE_MINUTES=1 in .env,
-#               log in, wait 1 minute)              -> 401 "Could not validate credentials"

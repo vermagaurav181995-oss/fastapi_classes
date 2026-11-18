@@ -1,5 +1,3 @@
-"""Solution 9: require_role -> DELETE /books/{id} is admin-only (403 vs 204)."""
-
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -29,5 +27,3 @@ AdminUser = Annotated[User, Depends(require_role("admin"))]
 def delete_book(book_id: int, admin: AdminUser) -> None:
     if BOOKS.pop(book_id, None) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
-
-# student token -> 403     admin token -> 204

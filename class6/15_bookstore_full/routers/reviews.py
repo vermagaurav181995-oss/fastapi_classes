@@ -1,5 +1,3 @@
-"""Reviews: public reads, users write, only the OWNER or an admin may edit/delete."""
-
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 

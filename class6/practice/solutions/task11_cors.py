@@ -1,5 +1,3 @@
-"""Solution 11: CORS for http://localhost:5173."""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,6 +19,3 @@ app.include_router(login_router)
 @app.get("/auth/me")
 def read_me(user: CurrentUser):
     return {"email": user.email}
-
-# Origin: http://localhost:5173 -> response has access-control-allow-origin
-# Origin: http://evil.example   -> no such header (the browser blocks it)

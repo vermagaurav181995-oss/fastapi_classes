@@ -1,9 +1,4 @@
 <!doctype html>
-<!--
-  Tiny frontend for example 11.
-  Serve it from THIS folder:   python -m http.server 5173
-  Then open:                   http://localhost:5173   (localhost, not 127.0.0.1!)
--->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -29,7 +24,6 @@
 
     document.getElementById("go").addEventListener("click", async () => {
       try {
-        // 1. Log in: OAuth2 expects a FORM body with "username" and "password"
         const loginRes = await fetch(`${API}/auth/login`, {
           method: "POST",
           body: new URLSearchParams({
@@ -40,13 +34,11 @@
         const login = await loginRes.json();
         if (!loginRes.ok) { out.textContent = "Login failed: " + JSON.stringify(login); return; }
 
-        // 2. Call a protected route with the token
         const meRes = await fetch(`${API}/auth/me`, {
           headers: { Authorization: `Bearer ${login.access_token}` },
         });
         out.textContent = JSON.stringify(await meRes.json(), null, 2);
       } catch (err) {
-        // A CORS block shows up here as "TypeError: Failed to fetch"
         out.textContent = "Request blocked: " + err + "\nCheck the browser console for the CORS message.";
       }
     });

@@ -1,5 +1,3 @@
-"""Solution 5: POST /auth/login; decode the token and print the payload."""
-
 from typing import Annotated
 
 import jwt
@@ -24,7 +22,5 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession):
         )
     token = create_access_token(user.id)
     payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-    print("token payload:", payload)  # {'sub': '1', 'exp': 17...}
+    print("token payload:", payload)
     return {"access_token": token, "token_type": "bearer"}
-
-# student@example.com / password123 -> 200 + payload printed    wrong password -> 401

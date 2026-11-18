@@ -1,8 +1,6 @@
-# Secrets and local databases
 .env
 *.db
 
-# Python
 .venv/
 venv/
 __pycache__/
