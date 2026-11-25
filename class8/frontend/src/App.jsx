@@ -1,5 +1,4 @@
 import { Route, Routes } from "react-router-dom";
-import ApiLog from "./components/ApiLog";
 import Layout from "./components/Layout";
 import { PublicOnly, RequireAuth } from "./components/RouteGuards";
 import BookDetail from "./pages/BookDetail";
@@ -32,7 +31,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <ApiLog />
     </>
   );
 }

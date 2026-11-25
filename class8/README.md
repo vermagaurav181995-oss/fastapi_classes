@@ -17,8 +17,8 @@ Open http://localhost:5173 and sign in with one of the demo accounts:
 
 Everything is mocked: no backend is needed yet.
 - The data lives in your browser's localStorage.
-- The **API** button in the bottom-right corner shows every request the UI makes.
-- The reset button in that panel restores the seed data.
+- To restore the seed data, clear the site's storage in your browser's dev tools (Application → Storage → Clear site data).
+- Every API call the UI makes is listed in `src/api/endpoints.js`.
 
 ## Pages
 

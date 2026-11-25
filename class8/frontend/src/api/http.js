@@ -48,15 +48,6 @@ export class ApiError extends Error {
   }
 }
 
-const listeners = new Set();
-
-export function onApiCall(listener) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function cleanQuery(query) {
@@ -98,15 +89,10 @@ export async function request(method, path, { query, body, form } = {}) {
   const qs = new URLSearchParams(params).toString();
   const fullPath = qs ? `${path}?${qs}` : path;
   const token = tokenStore.get();
-  const started = performance.now();
 
   const { status, data } = USE_MOCK
     ? await sendMock(method, path, { query: params, body, form, token })
     : await sendHttp(method, `${API_URL}${fullPath}`, { body, form, token });
-
-  for (const listener of listeners) {
-    listener({ id: crypto.randomUUID(), method, path: fullPath, status, ms: Math.round(performance.now() - started), at: new Date() });
-  }
 
   if (status === 0 || status >= 400) {
     if (status === 401 && token) window.dispatchEvent(new Event("booknest:unauthorized"));
