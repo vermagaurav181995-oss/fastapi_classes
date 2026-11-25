@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Class 7 chat</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
+    input, button { font: inherit; padding: .4rem; }
+    #messages { list-style: none; padding: .5rem; border: 1px solid #ccc; height: 18rem; overflow-y: auto; }
+    .system { color: #777; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>Chat</h1>
+  <form id="join">
+    <input id="username" placeholder="Your name" required>
+    <button>Join</button>
+  </form>
+  <ul id="messages"></ul>
+  <form id="send" hidden>
+    <input id="text" placeholder="Type a message" autocomplete="off" required>
+    <button>Send</button>
+  </form>
+
+  <script>
+    let socket;
+    const messages = document.getElementById("messages");
+
+    function show(data) {
+      const item = document.createElement("li");
+      item.textContent = `${data.user}: ${data.message}`;
+      if (data.user === "system") item.className = "system";
+      messages.appendChild(item);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    document.getElementById("join").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const name = encodeURIComponent(document.getElementById("username").value);
+      const protocol = location.protocol === "https:" ? "wss" : "ws";
+      socket = new WebSocket(`${protocol}://${location.host}/ws/chat/${name}`);
+      socket.onmessage = (event) => show(JSON.parse(event.data));
+      socket.onclose = () => show({ user: "system", message: "disconnected" });
+      document.getElementById("join").hidden = true;
+      document.getElementById("send").hidden = false;
+    });
+
+    document.getElementById("send").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.getElementById("text");
+      socket.send(input.value);
+      input.value = "";
+    });
+  </script>
+</body>
+</html>
